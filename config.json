@@ -1,0 +1,12 @@
+{
+  "matchers": [
+    {
+      "name": "deepmatcher",
+      "image": "merfanian/fair-entity-matching:demo-deepmatcher-0.1.0"
+    },
+    {
+      "name": "hiermatcher",
+      "image": "merfanian/fair-entity-matching:demo-hiermatcher-0.1.0"
+    }
+  ]
+}

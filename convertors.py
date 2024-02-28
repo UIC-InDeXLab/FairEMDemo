@@ -1,3 +1,4 @@
+import os.path
 from abc import ABC, abstractmethod
 from pathlib import Path
 
@@ -5,8 +6,7 @@ import copy
 import pandas as pd
 
 
-def split(filename, train_ratio=0.7, val_ratio=0.15) -> dict:
-    df = pd.read_csv(filename)
+def split(df, train_ratio=0.7, val_ratio=0.15) -> dict:
     train_size = int(len(df) * train_ratio)
     val_size = int(len(df) * val_ratio)
 
@@ -20,18 +20,14 @@ class Convertor(ABC):
 
     def __init__(self, dataset_id, splits):
         self.dataset_id = dataset_id
-        self.input_df = self.load_df()
         self.__splits__ = splits
         self.create_dir()
-
-    def load_df(self) -> pd.DataFrame:
-        return pd.read_csv(f"datasets/{self.dataset_id}.csv")
 
     def create_dir(self):
         Path(self.output_dir_name).mkdir(parents=True, exist_ok=True)
 
     def save_df_as_csv(self, df, name: str):
-        df.to_csv(self.output_dir_name + f"{name}.csv", index=False)
+        df.to_csv(os.path.join(self.output_dir_name, f"{name}.csv"), index=False)
 
     @abstractmethod
     def convert(self):
@@ -44,7 +40,7 @@ class Convertor(ABC):
 
     @property
     def output_dir_name(self) -> str:
-        return "preprocess/" + self.dir_name + "/" + self.dataset_id + "/"
+        return os.path.join(os.getenv("PREPROCESS_PATH", "./preprocess"), self.dir_name, self.dataset_id)
 
     @property
     def splits(self):
@@ -72,7 +68,7 @@ class DittoConvertor(Convertor):
             schema = list(df.columns)[0:]
             schema = [x for x in schema if x.lower() != "id"]
             ditto_schema = [x.replace("left_", "").replace("right_", "") for x in schema]
-            with open(self.output_dir_name + f"{name}.txt", "w+") as res_file:
+            with open(os.path.join(self.output_dir_name, f"{name}.txt"), "w+") as res_file:
                 for idx, row in df.iterrows():
                     label = row["label"]
                     ditto_row = ""
