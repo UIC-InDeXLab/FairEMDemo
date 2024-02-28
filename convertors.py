@@ -21,9 +21,9 @@ class Convertor(ABC):
     def __init__(self, dataset_id, splits):
         self.dataset_id = dataset_id
         self.__splits__ = splits
-        self.create_dir()
+        self.__init_dirs__()
 
-    def create_dir(self):
+    def __init_dirs__(self):
         Path(self.output_dir_name).mkdir(parents=True, exist_ok=True)
 
     def save_df_as_csv(self, df, name: str):
@@ -35,12 +35,12 @@ class Convertor(ABC):
 
     @staticmethod
     @abstractmethod
-    def dir_name() -> str:
+    def get_dir_name() -> str:
         pass
 
     @property
     def output_dir_name(self) -> str:
-        return os.path.join(os.getenv("PREPROCESS_PATH", "./preprocess"), self.dir_name(), self.dataset_id)
+        return os.path.join(os.getenv("PREPROCESS_PATH", "./preprocess"), self.get_dir_name(), self.dataset_id)
 
     @property
     def splits(self):
@@ -50,7 +50,7 @@ class Convertor(ABC):
 class StandardConvertor(Convertor):
 
     @staticmethod
-    def dir_name() -> str:
+    def get_dir_name() -> str:
         return "standard"
 
     def convert(self):
@@ -61,7 +61,7 @@ class StandardConvertor(Convertor):
 class DittoConvertor(Convertor):
 
     @staticmethod
-    def dir_name() -> str:
+    def get_dir_name() -> str:
         return "ditto"
 
     def convert(self):
@@ -87,7 +87,7 @@ class DittoConvertor(Convertor):
 
 class GNEMConvertor(Convertor):
     @staticmethod
-    def dir_name() -> str:
+    def get_dir_name() -> str:
         return "gnem"
 
     def convert(self):
@@ -113,7 +113,7 @@ class GNEMConvertor(Convertor):
 
 class MCANConvertor(Convertor):
     @staticmethod
-    def dir_name() -> str:
+    def get_dir_name() -> str:
         return "mcan"
 
     def convert(self):
@@ -125,7 +125,7 @@ class MCANConvertor(Convertor):
 
 class NonNeuralConvertor(Convertor):
     @staticmethod
-    def dir_name() -> str:
+    def get_dir_name() -> str:
         return "non-neural"
 
     def convert(self):

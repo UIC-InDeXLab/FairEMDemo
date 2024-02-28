@@ -1,5 +1,7 @@
 import os
 from abc import ABC, abstractmethod
+from pathlib import Path
+
 import docker
 import json
 
@@ -10,24 +12,7 @@ from singleton import Singleton
 
 
 # Commands :
-# Deepmatcher: docker run -v ./fasttext/:/root/.vector_cache/ -v ./train_1/:/app/deepmatcher/data/train_1/ -e TASK=train_1 merfanian/fair-entity-matching:demo-deepmatcher-0.1.0
-# HierMatcher: docker run -v ./fasttext/:/app/HierMatcher/embedding/ -v ./train_1/:/app/HierMatcher/data/train_1/ -e TASK=train_1 merfanian/fair-entity-matching:demo-hiermatcher-0.1.0
 # Non-Neural:  docker run  -v ./train_1/:/app/non-neural/data/train_1/ -e TASK=train_1  merfanian/fair-entity-matching:demo-nonneural-0.1.0
-# MCAN:  docker run -v ./fasttext/:/app/MCAN/embedding/ -v ./train_1/:/app/MCAN/data/Structural/train_1/ -e TASK=train_1 merfanian/fair-entity-matching:demo-mcan-0.1.0
-
-@Singleton
-class MatcherConfigManager:
-    def __init__(self):
-        self.matchers = self.__init_matchers__()
-
-    @staticmethod
-    def __init_matchers__():
-        with open(os.getenv("CONFIG_PATH", "./config.json"), 'r+') as f:
-            config = json.load(f)
-            return config["matchers"]
-
-    def get_matcher_image(self, name: str):
-        return [m["image"] for m in self.matchers if m["name"].strip().lower() == name.strip().lower()].pop()
 
 
 class Matcher(ABC):
@@ -39,6 +24,10 @@ class Matcher(ABC):
         self.scores = []
         self.client = docker.from_env()
         self.output = None
+        self.__init_dirs__()
+
+    def __init_dirs__(self):
+        Path(self.scores_dir).mkdir(parents=True, exist_ok=True)
 
     @abstractmethod
     def match(self):
@@ -81,36 +70,36 @@ class Matcher(ABC):
             stdout=True,
             stderr=True,
             environment=envs,
-            volumes=volumes
+            volumes=volumes,
+            device_requests=[
+                docker.types.DeviceRequest(device_ids=["all"], capabilities=[['gpu']])]
         )
 
         output = container.logs(stdout=True, stderr=True, follow=True).decode()
         container.wait()
         self.output = output
 
-    @property
+    @staticmethod
     @abstractmethod
-    def name(self) -> str:
-        # TODO: Change this method to static method
+    def get_name() -> str:
         pass
 
     @property
     def image_name(self) -> str:
-        manager: MatcherConfigManager = MatcherConfigManager.instance()
-        return manager.get_matcher_image(self.name)
+        manager: MatcherManager = MatcherManager.instance()
+        return manager.get_matcher_image(self.get_name())
 
     @property
     def preprocess_dir(self) -> str:
-        dir_name = convertors.ConvertorManager.get_convertor(self.name).dir_name()
+        dir_name = convertors.ConvertorManager.get_convertor(self.get_name()).get_dir_name()
         return os.path.join(os.getenv("PREPROCESS_PATH", "./preprocess"), dir_name, self.dataset_id)
 
     @property
     def scores_dir(self) -> str:
-        return os.path.join(os.getenv("SCORES_PATH", "./scores"), self.name, self.dataset_id)
+        return os.path.join(os.getenv("SCORES_PATH", "./scores"), self.get_name(), self.dataset_id)
 
 
 class DeepMatcher(Matcher):
-
     def match(self):
         self.docker_run(
             volumes={os.getenv("FASTTEXT_PATH", "./fasttext"): {'bind': '/root/.vector_cache', 'mode': 'rw'},
@@ -119,6 +108,65 @@ class DeepMatcher(Matcher):
 
         self.extract_scores()
 
-    @property
-    def name(self) -> str:
+    @staticmethod
+    def get_name() -> str:
         return "deepmatcher"
+
+
+class HierMatcher(Matcher):
+    def match(self):
+        self.docker_run(
+            volumes={os.getenv("FASTTEXT_PATH", "./fasttext/"): {'bind': '/app/HierMatcher/embedding/', 'mode': 'rw'},
+                     self.preprocess_dir: {'bind': f'/app/HierMatcher/data/{self.dataset_id}/', 'mode': 'rw'}},
+            envs={"TASK": self.dataset_id, "EPOCHS": self.epochs})
+
+        self.extract_scores()
+
+    @staticmethod
+    def get_name() -> str:
+        return "hiermatcher"
+
+
+class MCANMatcher(Matcher):
+    def match(self):
+        self.docker_run(
+            volumes={
+                os.getenv("FASTTEXT_PATH", "./fasttext/"): {'bind': '/app/MCAN/embedding/', 'mode': 'rw'},
+                self.preprocess_dir: {'bind': f'/app/MCAN/data/Structural/{self.dataset_id}/', 'mode': 'rw'}},
+            envs={"TASK": self.dataset_id, "EPOCHS": self.epochs})
+
+        self.extract_scores()
+
+    @staticmethod
+    def get_name() -> str:
+        return "mcan"
+
+
+@Singleton
+class MatcherManager:
+    def __init__(self):
+        self.matchers = self.__init_matchers__()
+        self.mappings = self.__init_mappings__()
+
+    @staticmethod
+    def __init_mappings__():
+        return {
+            "mcan": MCANMatcher,
+            "deepmatcher": DeepMatcher,
+            "hiermatcher": HierMatcher
+        }
+
+    @staticmethod
+    def __init_matchers__():
+        with open(os.getenv("CONFIG_PATH", "./config.json"), 'r+') as f:
+            config = json.load(f)
+            return config["matchers"]
+
+    def get_matcher(self, matcher_name: str) -> Matcher:
+        return self.mappings[matcher_name.strip().lower()]
+
+    def get_all_matchers(self):
+        return self.mappings.values()
+
+    def get_matcher_image(self, name: str):
+        return [m["image"] for m in self.matchers if m["name"].strip().lower() == name.strip().lower()].pop()

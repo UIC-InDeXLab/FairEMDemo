@@ -7,7 +7,7 @@ from fastapi import FastAPI, UploadFile, File, WebSocket, WebSocketDisconnect
 from websockets import ConnectionClosed
 
 from convertors import split, ConvertorManager, Convertor
-from matchers import DeepMatcher
+from matchers import MatcherManager, Matcher
 from utils import load_dataset_as_df
 import pandas as pd
 
@@ -52,7 +52,9 @@ def preprocess(dataset_id: str):
 @app.get("/v1/datasets/{dataset_id}/match/")
 async def match(dataset_id: str, matcher: str, matching_threshold: float = 0.5, fairness_threshold: float = 0.2,
                 epochs: int = 1):
-    matcher = DeepMatcher(dataset_id=dataset_id, matching_threshold=matching_threshold, epochs=epochs)
+    manager: MatcherManager = MatcherManager.instance()
+    matcher_class: Matcher = manager.get_matcher(matcher)
+    matcher = matcher_class(dataset_id=dataset_id, matching_threshold=matching_threshold, epochs=epochs)
     matcher.match()
     return {"successful": True}
 
