@@ -33,14 +33,14 @@ class Convertor(ABC):
     def convert(self):
         pass
 
-    @property
+    @staticmethod
     @abstractmethod
-    def dir_name(self) -> str:
+    def dir_name() -> str:
         pass
 
     @property
     def output_dir_name(self) -> str:
-        return os.path.join(os.getenv("PREPROCESS_PATH", "./preprocess"), self.dir_name, self.dataset_id)
+        return os.path.join(os.getenv("PREPROCESS_PATH", "./preprocess"), self.dir_name(), self.dataset_id)
 
     @property
     def splits(self):
@@ -49,18 +49,19 @@ class Convertor(ABC):
 
 class StandardConvertor(Convertor):
 
+    @staticmethod
+    def dir_name() -> str:
+        return "standard"
+
     def convert(self):
         for name, df in self.splits.items():
             self.save_df_as_csv(df, name)
 
-    @property
-    def dir_name(self) -> str:
-        return "standard"
-
 
 class DittoConvertor(Convertor):
-    @property
-    def dir_name(self) -> str:
+
+    @staticmethod
+    def dir_name() -> str:
         return "ditto"
 
     def convert(self):
@@ -85,6 +86,10 @@ class DittoConvertor(Convertor):
 
 
 class GNEMConvertor(Convertor):
+    @staticmethod
+    def dir_name() -> str:
+        return "gnem"
+
     def convert(self):
         merged_df = pd.concat(self.splits, axis=0, ignore_index=True)
 
@@ -105,24 +110,24 @@ class GNEMConvertor(Convertor):
             df = df.rename({'left_id': 'ltable_id', 'right_id': 'rtable_id'}, axis=1)
             self.save_df_as_csv(df, name)
 
-    @property
-    def dir_name(self) -> str:
-        return "gnem"
-
 
 class MCANConvertor(Convertor):
+    @staticmethod
+    def dir_name() -> str:
+        return "mcan"
+
     def convert(self):
         for name, df in self.splits.items():
             df.rename(columns=lambda x: x.replace('left_', 'ltable_'), inplace=True)
             df.rename(columns=lambda x: x.replace('right_', 'rtable_'), inplace=True)
             self.save_df_as_csv(df, name)
 
-    @property
-    def dir_name(self) -> str:
-        return "mcan"
-
 
 class NonNeuralConvertor(Convertor):
+    @staticmethod
+    def dir_name() -> str:
+        return "non-neural"
+
     def convert(self):
         merged_df = pd.concat(self.splits, axis=0, ignore_index=True)
 
@@ -141,10 +146,6 @@ class NonNeuralConvertor(Convertor):
         # TODO: Check if validation split must be ignored
         for name, df in self.splits.items():
             self.save_df_as_csv(df, name)
-
-    @property
-    def dir_name(self) -> str:
-        return "non-neural"
 
 
 class ConvertorManager:

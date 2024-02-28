@@ -3,6 +3,9 @@ from abc import ABC, abstractmethod
 import docker
 import json
 
+import pandas as pd
+
+import convertors
 from singleton import Singleton
 
 
@@ -42,7 +45,33 @@ class Matcher(ABC):
         pass
 
     def extract_scores(self):
+        def is_float(str):
+            try:
+                float(str)
+                return True
+            except ValueError:
+                return False
+
         assert self.output is not None
+        in_data = self.output.splitlines()
+        data = []
+        is_results = False
+        is_columns = False
+
+        for line in in_data:
+            if line.startswith("==========") and line.endswith("=========="):
+                is_results = not is_results
+            elif is_results:
+                if not is_columns:
+                    is_columns = True
+                    if is_float(line.strip()):
+                        data.append(float(line.strip()))
+                else:
+                    data.append(float(line))
+        self.scores = data
+
+        df = pd.DataFrame(self.scores, columns=["scores"])
+        df.to_csv(os.path.join(self.scores_dir, "preds.csv"), index=False)
 
     def docker_run(self, envs: dict, volumes: dict):
         container = self.client.containers.run(
@@ -50,18 +79,19 @@ class Matcher(ABC):
             detach=True,
             remove=True,
             stdout=True,
-            stderr=False,
+            stderr=True,
             environment=envs,
             volumes=volumes
         )
 
-        output = container.logs(stdout=True, stderr=False).decode()
+        output = container.logs(stdout=True, stderr=True, follow=True).decode()
         container.wait()
         self.output = output
 
-    @abstractmethod
     @property
+    @abstractmethod
     def name(self) -> str:
+        # TODO: Change this method to static method
         pass
 
     @property
@@ -71,16 +101,23 @@ class Matcher(ABC):
 
     @property
     def preprocess_dir(self) -> str:
-        return os.path.join(os.getenv("PREPROCESS_PATH", "./preprocess"), self.name, self.dataset_id)
+        dir_name = convertors.ConvertorManager.get_convertor(self.name).dir_name()
+        return os.path.join(os.getenv("PREPROCESS_PATH", "./preprocess"), dir_name, self.dataset_id)
+
+    @property
+    def scores_dir(self) -> str:
+        return os.path.join(os.getenv("SCORES_PATH", "./scores"), self.name, self.dataset_id)
 
 
 class DeepMatcher(Matcher):
 
     def match(self):
         self.docker_run(
-            volumes={os.getenv("FASTTEXT_PATH", "./fasttext"): {'bind': '/root/.vector_cache', 'mode': 'ro'},
-                     self.preprocess_dir: {'bind': f'/app/deepmatcher/data/{self.dataset_id}/', 'mode': 'ro'}},
+            volumes={os.getenv("FASTTEXT_PATH", "./fasttext"): {'bind': '/root/.vector_cache', 'mode': 'rw'},
+                     self.preprocess_dir: {'bind': f'/app/deepmatcher/data/{self.dataset_id}/', 'mode': 'rw'}},
             envs={"TASK": self.dataset_id, "EPOCHS": self.epochs})
+
+        self.extract_scores()
 
     @property
     def name(self) -> str:
