@@ -11,6 +11,14 @@
     {
       "name": "mcan",
       "image": "merfanian/fair-entity-matching:demo-mcan-0.1.0"
+    },
+    {
+      "name": "ditto",
+      "image": "merfanian/fair-entity-matching:demo-ditto-0.1.0"
+    },
+    {
+      "name": "nonneural",
+      "image": "merfanian/fair-entity-matching:demo-nonneural-0.1.0"
     }
   ]
 }

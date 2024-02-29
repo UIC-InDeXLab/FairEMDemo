@@ -1,7 +1,7 @@
 import os
-import asyncio
 from pathlib import Path
 
+import pandas as pd
 from dotenv import load_dotenv
 from fastapi import FastAPI, UploadFile, File, WebSocket, WebSocketDisconnect
 from websockets import ConnectionClosed
@@ -9,7 +9,6 @@ from websockets import ConnectionClosed
 from convertors import split, ConvertorManager, Convertor
 from matchers import MatcherManager, Matcher
 from utils import load_dataset_as_df
-import pandas as pd
 
 load_dotenv()
 

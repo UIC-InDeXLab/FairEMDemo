@@ -1,18 +1,13 @@
+import json
 import os
 from abc import ABC, abstractmethod
 from pathlib import Path
 
 import docker
-import json
-
 import pandas as pd
 
 import convertors
 from singleton import Singleton
-
-
-# Commands :
-# Non-Neural:  docker run  -v ./train_1/:/app/non-neural/data/train_1/ -e TASK=train_1  merfanian/fair-entity-matching:demo-nonneural-0.1.0
 
 
 class Matcher(ABC):
@@ -33,7 +28,7 @@ class Matcher(ABC):
     def match(self):
         pass
 
-    def extract_scores(self):
+    def extract_scores(self) -> iter(list[float], str):
         def is_float(str):
             try:
                 float(str)
@@ -46,10 +41,19 @@ class Matcher(ABC):
         data = []
         is_results = False
         is_columns = False
+        data_batch_finished = True
+        title = ""
 
         for line in in_data:
             if line.startswith("==========") and line.endswith("=========="):
                 is_results = not is_results
+                data_batch_finished = not data_batch_finished
+                title = str(line).replace("==========", "")
+                if data_batch_finished and len(data) > 0:
+                    yield title, data
+                    data = []
+                    is_columns = False
+
             elif is_results:
                 if not is_columns:
                     is_columns = True
@@ -57,10 +61,9 @@ class Matcher(ABC):
                         data.append(float(line.strip()))
                 else:
                     data.append(float(line))
-        self.scores = data
 
-        df = pd.DataFrame(self.scores, columns=["scores"])
-        df.to_csv(os.path.join(self.scores_dir, "preds.csv"), index=False)
+        if data_batch_finished and len(data) > 0:
+            yield title, data
 
     def docker_run(self, envs: dict, volumes: dict):
         container = self.client.containers.run(
@@ -76,7 +79,7 @@ class Matcher(ABC):
         )
 
         output = container.logs(stdout=True, stderr=True, follow=True).decode()
-        container.wait()
+        # container.wait()
         self.output = output
 
     @staticmethod
@@ -106,7 +109,9 @@ class DeepMatcher(Matcher):
                      self.preprocess_dir: {'bind': f'/app/deepmatcher/data/{self.dataset_id}/', 'mode': 'rw'}},
             envs={"TASK": self.dataset_id, "EPOCHS": self.epochs})
 
-        self.extract_scores()
+        title, self.scores = next(self.extract_scores())
+        df = pd.DataFrame(self.scores, columns=["scores"])
+        df.to_csv(os.path.join(self.scores_dir, "preds.csv"), index=False)
 
     @staticmethod
     def get_name() -> str:
@@ -120,7 +125,9 @@ class HierMatcher(Matcher):
                      self.preprocess_dir: {'bind': f'/app/HierMatcher/data/{self.dataset_id}/', 'mode': 'rw'}},
             envs={"TASK": self.dataset_id, "EPOCHS": self.epochs})
 
-        self.extract_scores()
+        title, self.scores = next(self.extract_scores())
+        df = pd.DataFrame(self.scores, columns=["scores"])
+        df.to_csv(os.path.join(self.scores_dir, "preds.csv"), index=False)
 
     @staticmethod
     def get_name() -> str:
@@ -135,11 +142,58 @@ class MCANMatcher(Matcher):
                 self.preprocess_dir: {'bind': f'/app/MCAN/data/Structural/{self.dataset_id}/', 'mode': 'rw'}},
             envs={"TASK": self.dataset_id, "EPOCHS": self.epochs})
 
-        self.extract_scores()
+        title, self.scores = next(self.extract_scores())
+        df = pd.DataFrame(self.scores, columns=["scores"])
+        df.to_csv(os.path.join(self.scores_dir, "preds.csv"), index=False)
 
     @staticmethod
     def get_name() -> str:
         return "mcan"
+
+
+class DittoMatcher(Matcher):
+    def match(self):
+        self.docker_run(
+            volumes={self.preprocess_dir: {'bind': f'/app/ditto/data/{self.dataset_id}/', 'mode': 'rw'}},
+            envs={"TASK": self.dataset_id, "EPOCHS": self.epochs})
+
+        title, self.scores = next(self.extract_scores())
+        df = pd.DataFrame(self.scores, columns=["scores"])
+        df.to_csv(os.path.join(self.scores_dir, "preds.csv"), index=False)
+
+    @staticmethod
+    def get_name() -> str:
+        return "ditto"
+
+
+class NonNeuralMatcher(Matcher):
+
+    def match(self):
+        self.docker_run(
+            volumes={self.preprocess_dir: {'bind': f'/app/non-neural/data/{self.dataset_id}/', 'mode': 'rw'}},
+            envs={"TASK": self.dataset_id})
+
+        for title, scores in self.extract_scores():
+            print(title)
+            df = pd.DataFrame(scores, columns=["scores"])
+            dir = self.get_score_dir_by_name(str(title).split("/")[2])
+            Path(dir).mkdir(parents=True, exist_ok=True)
+            df.to_csv(os.path.join(dir, "preds.csv"), index=False)
+
+    def __init_dirs__(self):
+        pass
+
+    @staticmethod
+    def get_name() -> str:
+        return "nonneural"
+
+    @property
+    def scores_dir(self) -> str:
+        raise NotImplementedError("don't use this function for non-neural, use get_score_dir_by_name function with "
+                                  "method name")
+
+    def get_score_dir_by_name(self, name: str) -> str:
+        return os.path.join(os.getenv("SCORES_PATH", "./scores"), name, self.dataset_id)
 
 
 @Singleton
@@ -151,9 +205,11 @@ class MatcherManager:
     @staticmethod
     def __init_mappings__():
         return {
+            "ditto": DittoMatcher,
             "mcan": MCANMatcher,
             "deepmatcher": DeepMatcher,
-            "hiermatcher": HierMatcher
+            "hiermatcher": HierMatcher,
+            "nonneural": NonNeuralMatcher,
         }
 
     @staticmethod

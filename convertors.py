@@ -1,8 +1,8 @@
+import copy
 import os.path
 from abc import ABC, abstractmethod
 from pathlib import Path
 
-import copy
 import pandas as pd
 
 
