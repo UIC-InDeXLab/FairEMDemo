@@ -1,13 +1,17 @@
 import os
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
+from typing import List, Type
 
 import pandas as pd
 from dotenv import load_dotenv
-from fastapi import FastAPI, UploadFile, File, WebSocket, WebSocketDisconnect
-from websockets import ConnectionClosed
+from fastapi import FastAPI, UploadFile, File, Query
 
-from convertors import split, ConvertorManager, Convertor
-from matchers import MatcherManager, Matcher
+from convertors import split, ConvertorManager, StandardConvertor
+from enums import DisparityCalculationType, FairnessMeasure, MatcherAlgorithm
+from fairness.analyzer import FairnessAnalyzer
+from matchers import MatcherManager
+from predictors import PredictorManager, Predictor
 from utils import load_dataset_as_df
 
 load_dotenv()
@@ -18,7 +22,6 @@ def startup():
 
 
 app = FastAPI(on_startup=[startup])
-active_clients = set()
 
 
 @app.post("/v1/datasets/")
@@ -40,41 +43,54 @@ async def upload_dataset(file: UploadFile = File(...)):
 
 
 @app.get("/v1/datasets/{dataset_id}/preprocess/")
-def preprocess(dataset_id: str):
+async def preprocess(dataset_id: str):
     datasets_splits = split(load_dataset_as_df(dataset_id))
     for convertor_class in ConvertorManager.get_all_convertors():
-        c: Convertor = convertor_class(dataset_id=dataset_id, splits=datasets_splits)
-        c.convert()
+        convertor_class(dataset_id=dataset_id, splits=datasets_splits).convert()
+
     return {"successful": True}
 
 
 @app.get("/v1/datasets/{dataset_id}/match/")
-async def match(dataset_id: str, matcher: str, matching_threshold: float = 0.5, fairness_threshold: float = 0.2,
-                epochs: int = 1):
+async def find_scores(dataset_id: str, matchers: List[MatcherAlgorithm] = Query(None), epochs: int = 1):
     manager: MatcherManager = MatcherManager.instance()
-    matcher_class: Matcher = manager.get_matcher(matcher)
-    matcher = matcher_class(dataset_id=dataset_id, matching_threshold=matching_threshold, epochs=epochs)
-    matcher.match()
+    matcher_classes = set()
+    with ThreadPoolExecutor() as executor:
+        futures = []
+        for matcher in matchers:
+            matcher_class = manager.get_matcher(matcher.value)
+
+            if matcher_class in matcher_classes:
+                continue
+
+            matcher_classes.add(matcher_class)
+            matcher = matcher_class(dataset_id=dataset_id, epochs=epochs)
+            future = executor.submit(matcher.find_scores)  # Run matcher in a thread
+            futures.append(future)
+
+        for future in futures:
+            future.result()
+
     return {"successful": True}
 
 
-@app.websocket("/ws")
-async def websocket_endpoint(websocket: WebSocket):
-    await websocket.accept()
+@app.get("/v1/datasets/{dataset_id}/fairness/")
+async def calculate_fairness_metrics(dataset_id: str,
+                                     sensitive_attribute: str,
+                                     disparity_calculation_type: DisparityCalculationType,
+                                     fairness_metrics: List[FairnessMeasure] = Query(None),
+                                     matchers: List[MatcherAlgorithm] = Query(None),
+                                     matching_threshold: float = 0.5,
+                                     fairness_threshold: float = 0.2):
+    test_df = pd.read_csv(StandardConvertor(dataset_id=dataset_id, splits=None).test_path)
+    fairness_analyzer = FairnessAnalyzer(sensitive_attribute=sensitive_attribute, test_df=test_df)
 
-    try:
-        await websocket.send_text("Connection established!")
+    results = {}
+    for matcher in matchers:
+        predictor_class: Type[Predictor] = PredictorManager.instance().get_predictor(predictor_name=matcher.value)
+        prediction_df = predictor_class(dataset_id=dataset_id, matching_threshold=matching_threshold).predict()
+        results[matcher.value] = fairness_analyzer(prediction_df=prediction_df,
+                                                   disparity_calculation_type=disparity_calculation_type,
+                                                   measures=fairness_metrics, fairness_threshold=fairness_threshold)
 
-        while True:
-            msg = await websocket.receive_text()
-            if msg.lower() == "close":
-                await websocket.close()
-                break
-            elif msg.lower().startswith("dataset_id="):
-                print(f'CLIENT says - {msg}')
-                websocket.dataset_id = msg.lower().replace("dataset_id=", "")
-                active_clients.add(websocket)
-                # await websocket.send_text(f"Your message was: {msg}")
-
-    except (WebSocketDisconnect, ConnectionClosed):
-        print("Client disconnected")
+    return results

@@ -17,7 +17,7 @@
       "image": "merfanian/fair-entity-matching:demo-ditto-0.1.0"
     },
     {
-      "name": "nonneural",
+      "name": "non-neural",
       "image": "merfanian/fair-entity-matching:demo-nonneural-0.1.0"
     }
   ]

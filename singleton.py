@@ -1,3 +1,8 @@
+from typing import TypeVar, Callable
+
+T = TypeVar('T')  # Generic type variable for the decorated class
+
+
 class Singleton:
     """
     A non-thread-safe helper class to ease implementing singletons.
@@ -14,10 +19,10 @@ class Singleton:
 
     """
 
-    def __init__(self, decorated):
-        self._decorated = decorated
+    def __init__(self, decorated: Callable[[], T]) -> None:
+        self._decorated: Callable[[], T] = decorated  # Type annotation for decorated function
 
-    def instance(self):
+    def instance(self) -> T:
         """
         Returns the singleton instance. Upon its first call, it creates a
         new instance of the decorated class and calls its `__init__` method.
@@ -30,8 +35,8 @@ class Singleton:
             self._instance = self._decorated()
             return self._instance
 
-    def __call__(self):
+    def __call__(self) -> None:
         raise TypeError('Singletons must be accessed through `instance()`.')
 
-    def __instancecheck__(self, inst):
+    def __instancecheck__(self, inst: object) -> bool:
         return isinstance(inst, self._decorated)

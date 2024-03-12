@@ -2,19 +2,20 @@ import json
 import os
 from abc import ABC, abstractmethod
 from pathlib import Path
+from typing import Type
 
 import docker
 import pandas as pd
 
 import convertors
+from enums import MatcherAlgorithm
 from singleton import Singleton
 
 
 class Matcher(ABC):
 
-    def __init__(self, dataset_id: str, matching_threshold: float = 0.5, epochs: int = 1):
+    def __init__(self, dataset_id: str, epochs: int = 1):
         self.dataset_id = dataset_id
-        self.matching_threshold = matching_threshold
         self.epochs = epochs
         self.scores = []
         self.client = docker.from_env()
@@ -25,7 +26,7 @@ class Matcher(ABC):
         Path(self.scores_dir).mkdir(parents=True, exist_ok=True)
 
     @abstractmethod
-    def match(self):
+    def find_scores(self):
         pass
 
     def extract_scores(self) -> iter(list[float], str):
@@ -103,7 +104,7 @@ class Matcher(ABC):
 
 
 class DeepMatcher(Matcher):
-    def match(self):
+    def find_scores(self):
         self.docker_run(
             volumes={os.getenv("FASTTEXT_PATH", "./fasttext"): {'bind': '/root/.vector_cache', 'mode': 'rw'},
                      self.preprocess_dir: {'bind': f'/app/deepmatcher/data/{self.dataset_id}/', 'mode': 'rw'}},
@@ -115,11 +116,11 @@ class DeepMatcher(Matcher):
 
     @staticmethod
     def get_name() -> str:
-        return "deepmatcher"
+        return MatcherAlgorithm.DEEPMATCHER.value
 
 
 class HierMatcher(Matcher):
-    def match(self):
+    def find_scores(self):
         self.docker_run(
             volumes={os.getenv("FASTTEXT_PATH", "./fasttext/"): {'bind': '/app/HierMatcher/embedding/', 'mode': 'rw'},
                      self.preprocess_dir: {'bind': f'/app/HierMatcher/data/{self.dataset_id}/', 'mode': 'rw'}},
@@ -131,11 +132,11 @@ class HierMatcher(Matcher):
 
     @staticmethod
     def get_name() -> str:
-        return "hiermatcher"
+        return MatcherAlgorithm.HIERMATCHER.value
 
 
 class MCANMatcher(Matcher):
-    def match(self):
+    def find_scores(self):
         self.docker_run(
             volumes={
                 os.getenv("FASTTEXT_PATH", "./fasttext/"): {'bind': '/app/MCAN/embedding/', 'mode': 'rw'},
@@ -148,11 +149,11 @@ class MCANMatcher(Matcher):
 
     @staticmethod
     def get_name() -> str:
-        return "mcan"
+        return MatcherAlgorithm.MCAN.value
 
 
 class DittoMatcher(Matcher):
-    def match(self):
+    def find_scores(self):
         self.docker_run(
             volumes={self.preprocess_dir: {'bind': f'/app/ditto/data/{self.dataset_id}/', 'mode': 'rw'}},
             envs={"TASK": self.dataset_id, "EPOCHS": self.epochs})
@@ -163,37 +164,65 @@ class DittoMatcher(Matcher):
 
     @staticmethod
     def get_name() -> str:
-        return "ditto"
+        return MatcherAlgorithm.DITTO.value
 
 
-class NonNeuralMatcher(Matcher):
+class NonNeuralMatcher(Matcher, ABC):
 
-    def match(self):
+    def find_scores(self):
         self.docker_run(
             volumes={self.preprocess_dir: {'bind': f'/app/non-neural/data/{self.dataset_id}/', 'mode': 'rw'}},
-            envs={"TASK": self.dataset_id})
+            envs={"TASK": self.dataset_id, "MODEL": self.get_name()})
 
-        for title, scores in self.extract_scores():
-            print(title)
-            df = pd.DataFrame(scores, columns=["scores"])
-            dir = self.get_score_dir_by_name(str(title).split("/")[2])
-            Path(dir).mkdir(parents=True, exist_ok=True)
-            df.to_csv(os.path.join(dir, "preds.csv"), index=False)
-
-    def __init_dirs__(self):
-        pass
-
-    @staticmethod
-    def get_name() -> str:
-        return "nonneural"
+        title, self.scores = next(self.extract_scores())
+        df = pd.DataFrame(self.scores, columns=["scores"])
+        df.to_csv(os.path.join(self.scores_dir, "preds.csv"), index=False)
 
     @property
-    def scores_dir(self) -> str:
-        raise NotImplementedError("don't use this function for non-neural, use get_score_dir_by_name function with "
-                                  "method name")
+    def preprocess_dir(self) -> str:
+        dir_name = convertors.ConvertorManager.get_convertor(MatcherAlgorithm.NONNEURAL.value).get_dir_name()
+        return os.path.join(os.getenv("PREPROCESS_PATH", "./preprocess"), dir_name, self.dataset_id)
 
-    def get_score_dir_by_name(self, name: str) -> str:
-        return os.path.join(os.getenv("SCORES_PATH", "./scores"), name, self.dataset_id)
+    @property
+    def image_name(self) -> str:
+        manager: MatcherManager = MatcherManager.instance()
+        return manager.get_matcher_image(MatcherAlgorithm.NONNEURAL.value)
+
+
+class RandomForestMatcher(NonNeuralMatcher):
+    @staticmethod
+    def get_name() -> str:
+        return MatcherAlgorithm.RANDOM_FOREST.value
+
+
+class DecisionTreeMatcher(NonNeuralMatcher):
+    @staticmethod
+    def get_name() -> str:
+        return MatcherAlgorithm.DECISION_TREE.value
+
+
+class LinearRegressionMatcher(NonNeuralMatcher):
+    @staticmethod
+    def get_name() -> str:
+        return MatcherAlgorithm.LINEAR_REGRESSION.value
+
+
+class LogisticRegressionMatcher(NonNeuralMatcher):
+    @staticmethod
+    def get_name() -> str:
+        return MatcherAlgorithm.LOGISTIC_REGRESSION.value
+
+
+class SVMMatcher(NonNeuralMatcher):
+    @staticmethod
+    def get_name() -> str:
+        return MatcherAlgorithm.SVM.value
+
+
+class NaiveBayesMatcher(NonNeuralMatcher):
+    @staticmethod
+    def get_name() -> str:
+        return MatcherAlgorithm.NAIVE_BAYES.value
 
 
 @Singleton
@@ -205,11 +234,16 @@ class MatcherManager:
     @staticmethod
     def __init_mappings__():
         return {
-            "ditto": DittoMatcher,
-            "mcan": MCANMatcher,
-            "deepmatcher": DeepMatcher,
-            "hiermatcher": HierMatcher,
-            "nonneural": NonNeuralMatcher,
+            MatcherAlgorithm.DITTO: DittoMatcher,
+            MatcherAlgorithm.MCAN: MCANMatcher,
+            MatcherAlgorithm.DEEPMATCHER: DeepMatcher,
+            MatcherAlgorithm.HIERMATCHER: HierMatcher,
+            MatcherAlgorithm.DECISION_TREE: DecisionTreeMatcher,
+            MatcherAlgorithm.LOGISTIC_REGRESSION: LogisticRegressionMatcher,
+            MatcherAlgorithm.LINEAR_REGRESSION: LinearRegressionMatcher,
+            MatcherAlgorithm.NAIVE_BAYES: NaiveBayesMatcher,
+            MatcherAlgorithm.RANDOM_FOREST: RandomForestMatcher,
+            MatcherAlgorithm.SVM: SVMMatcher
         }
 
     @staticmethod
@@ -218,8 +252,8 @@ class MatcherManager:
             config = json.load(f)
             return config["matchers"]
 
-    def get_matcher(self, matcher_name: str) -> Matcher:
-        return self.mappings[matcher_name.strip().lower()]
+    def get_matcher(self, matcher_name: str) -> Type[Matcher]:
+        return self.mappings[MatcherAlgorithm(matcher_name.strip().lower())]
 
     def get_all_matchers(self):
         return self.mappings.values()
