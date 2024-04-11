@@ -18,7 +18,7 @@
 
 ## Updates
 
-**[Apr 12 2024]** Paper released to [Arxiv](https://arxiv.org/pdf/2309.05569.pdf).
+**[Apr 12 2024]** Paper released to [Arxiv](https://arxiv.org/pdf/).
 
 
 ## Outline
