@@ -1,0 +1,24 @@
+{
+  "matchers": [
+    {
+      "name": "deepmatcher",
+      "image": "merfanian/fair-entity-matching:demo-deepmatcher-0.1.0"
+    },
+    {
+      "name": "hiermatcher",
+      "image": "merfanian/fair-entity-matching:demo-hiermatcher-0.1.0"
+    },
+    {
+      "name": "mcan",
+      "image": "merfanian/fair-entity-matching:demo-mcan-0.1.0"
+    },
+    {
+      "name": "ditto",
+      "image": "merfanian/fair-entity-matching:demo-ditto-0.1.0"
+    },
+    {
+      "name": "non-neural",
+      "image": "merfanian/fair-entity-matching:demo-nonneural-0.1.0"
+    }
+  ]
+}

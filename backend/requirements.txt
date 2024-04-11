@@ -1,0 +1,11 @@
+# backend
+fastapi
+uvicorn[standard]
+python-dotenv
+python-multipart
+requests
+websockets
+pandas
+docker
+aiohttp
+scikit-learn

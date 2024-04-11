@@ -1,0 +1,23 @@
+key,definition
+DeepMatcher,A Python library using deep learning models for entity matching tasks
+HierMatcher,A technique that leverages hierarchical structure often available with real-world datasets to empower existing semi-supervised learning methods.
+MCAN,"Multi-context attention framework that takes into account self-attention, pair-attention and global-attention from three types of context. "
+sensitive attribute,"A characteristic (e.g., race, gender) in a dataset considered ethically problematic to use for decision-making"
+Disparity Calculation Type,A method for measuring the difference in model performance between groups defined by a sensitive attribute.
+accuracy parity,A fairness metric ensuring the overall accuracy of the model is equal across different sensitive groups.
+true positive rate parity,A fairness metric focusing on ensuring the model identifies true positives (correctly predicting positive cases) at an equal rate for all sensitive groups.
+CSRankings,Unknown data related to computer science rankings possibly universities or research institutions.
+Cameras,contains information about cameras
+DBLP-ACM,A bibliographic dataset containing information about publications from the Association for Computing Machinery (ACM)
+DBLP-Scholar,A bibliographic dataset containing information about publications from various academic sources
+Itunes-Amazon,A dataset that likely links corresponding products between iTunes and Amazon
+Matching Threshold,"the matching threshold defines the minimum level of similarity required for two records to be considered a match. It's a numerical value between 0 and 1, the higher matcher threshold is, the stricter is the matching policy"
+Fairness Threshold,"the fairness threshold represents the acceptable level of disparity between different groups. It's also a numerical value between 0 and 1, with the meaning depending on the chosen fairness metric, if fairness threshold is near zero all groups must have near equal performance of fairness measure."
+Ditto,"an EM system based on fine-tuning pre-trained Transformer-based language models. D uses a simple architecture to leverage pre-trained LMs and is further optimized by injecting domain knowledge, text summarization, and data augmentation."
+LinRegMatcher,"statistical technique used for comparing entities and determining their similarity. It works by creating a model that learns a linear relationship between features extracted from the entities. These features can be anything relevant to the matching task,"
+fairness paradigm,determines how fairness is analyzed across groups.
+pairwise fairness,This paradigm compares the matching performance between every pair of groups defined by the sensitive attribute
+single fairness,"This paradigm focuses on fairness across all groups simultaneously. It assesses whether the matching performance (e.g., accuracy, completeness) is consistent for each group defined by a sensitive attribute "
+false positive rate parity,"This metric looks at incorrectly identified matches (false positives). It ensures that the proportion of false positives among all predicted matches is similar for all groups. In other words, all groups should be equally likely to have non-matches mistakenly identified as matches."
+Negative Predictive Value Parity,"This metric concentrates on correctly identified non-matches (true negatives). It ensures that the proportion of true negatives among all predicted non-matches is similar for all groups. Basically, all groups should have an equal chance of having their true non-matches correctly classified by the system."
+Positive Predictive Value Parity,"This metric focuses on the precision of the matching system for each group. It ensures that the proportion of true positives among all predicted positives is similar for all groups. Simply put, all groups should have a similar likelihood of a predicted match actually being a true match."
