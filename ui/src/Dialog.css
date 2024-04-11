@@ -1,0 +1,26 @@
+.dialog-div {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-around;
+    width: 100%;
+}
+
+.dialog-example-div {
+    text-align: center;
+}
+
+.dialog-coverage-confusion-div {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 10px;
+    text-align: center;
+}
+
+.dialog-coverage-div {
+
+}
+
+.dialog-confusion-div {
+
+}

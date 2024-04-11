@@ -1,0 +1,89 @@
+/* Navbar.css */
+
+.navbar {
+    background: #6285A2;
+    color: #fff;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    text-align: center;
+    padding: 15px;
+    overflow: hidden;
+    border-radius: 25px;
+    margin: 20px;
+    transition: width 1s ease-in-out, opacity 0.3s ease-in-out; /* Add transition for width and opacity */
+    width: 40px; /* Initially set width to 0 */
+    height: 30px;
+    opacity: 0; /* Initially set opacity to 0 */
+}
+
+.navbar:hover {
+    background-color: #5b83a4;
+}
+
+.navbar-left {
+    display: flex;
+    align-items: center;
+    height: fit-content;
+}
+
+.navbar-center {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+}
+
+.logo {
+    width: 40px; /* Adjust width as needed */
+    height: auto;
+    margin-right: 1rem;
+}
+
+.app-title {
+    font-weight: bold;
+    font-size: 1.2rem;
+}
+
+.navbar-right {
+    display: flex;
+    gap: 1rem;
+}
+
+.step-indicator {
+    font-size: 17px;
+    font-weight: bold;
+    text-align: center;
+    white-space: nowrap;
+}
+
+.step {
+    font-weight: normal;
+    color: black;
+    margin-right: 10px;
+    align-self: center;
+    width: 100%;
+}
+
+.step.active {
+    font-weight: bold;
+    color: white;
+}
+
+.step-title {
+    font-size: 14px;
+}
+
+.navigation-buttons-div {
+    white-space: nowrap;
+}
+
+/* Animation for expanding the navbar width */
+.navbar.expanded {
+    width: 95%; /* Set the width to 100% */
+}
+
+/* Make the navbar opaque after opacity animation is done */
+.navbar.opaque {
+    opacity: 1;
+}

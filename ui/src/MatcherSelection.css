@@ -1,0 +1,78 @@
+/*!* MatcherSelection.css *!*/
+
+.matcher-div {
+    margin: 20px;
+    padding: 20px;
+    padding-top: 0px ;
+    /*display: flex;*/
+    /*flex-direction: column;*/
+}
+
+.heading {
+    font-size: 24px;
+    margin-bottom: 20px;
+}
+
+.description {
+    font-size: 16px;
+    margin-bottom: 15px;
+}
+
+matchers-list,
+matcher-item {
+    margin-bottom: 20px;
+}
+
+
+.matchers-groups-div {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-evenly;
+    width: max-content;
+    align-self: center;
+    justify-items: center;
+    gap: 10px;
+}
+
+.navigation-buttons {
+    display: flex;
+    /*justify-content: center;*/
+    width: 100%;
+    margin-top: 20px;
+}
+
+.matchers-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+}
+
+.matcher-item {
+    display: flex;
+    align-items: center;
+    padding: 10px;
+    /*border-bottom: 1px solid #eee;*/
+    border-radius: 10px;
+    margin: 10px;
+    background-color: #e4eef6;
+    cursor: pointer;
+    transition: background-color 0.2s ease-in-out;
+}
+
+.matcher-item:hover {
+    background-color: #6285A2;
+}
+
+.matcher-checkbox {
+    display: flex;
+    align-items: center;
+}
+
+.matcher-checkbox input[type="checkbox"] {
+    margin-right: 10px;
+}
+
+.matcher-checkbox label {
+    font-size: 0.9em;
+}

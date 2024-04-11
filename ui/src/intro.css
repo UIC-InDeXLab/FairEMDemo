@@ -1,0 +1,53 @@
+/* Intro.css */
+
+.intro-div {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    transition: opacity 1.5s ease; /* Opacity transition */
+    opacity: 1; /* Initially set opacity to 1 */
+    background-color: #bddbfe;
+}
+
+.fade-out {
+    opacity: 0; /* Set opacity to 0 to fade out */
+}
+
+.intro-content {
+    max-width: 600px;
+    text-align: center;
+    padding: 20px;
+}
+
+.intro-title {
+    font-size: 3rem;
+    color: #212121; /* Dark title color */
+    margin-bottom: 20px;
+}
+
+.intro-description {
+    font-size: 1.2rem;
+    color: #4d4d4d; /* Slightly darker text color */
+    margin-bottom: 30px;
+}
+
+.intro-button {
+    padding: 12px 24px;
+    font-size: 1rem;
+    color: #fff; /* Button text color */
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+
+.intro-image {
+    margin-left: 50px; /* Adjust spacing between content and image */
+}
+
+.logo-img {
+    max-width: 80%;
+    height: auto;
+}

@@ -1,0 +1,135 @@
+.fairness-analysis-container {
+    margin: 20px;
+    padding: 0;
+    display: flex;
+}
+
+/* Control Panel */
+/* FairnessAnalysis.css */
+
+.spinner-container {
+    display: flex;
+    justify-content: center; /* Horizontal alignment */
+    align-items: center; /* Vertical alignment */
+    height: 100%; /* Set the height of the container */
+}
+
+.spinner {
+    /* Add any additional styling for the spinner */
+}
+/* Control Panel */
+.control-panel {
+    display: flex;
+    flex-direction: column;
+    background-color: #dcdcdc; /* Light background color */
+    padding: 20px;
+    padding-top: 0;
+    border-radius: 25px;
+    height: max-content;
+}
+
+.control-panel label {
+    display: block;
+    margin-bottom: 10px;
+}
+
+.control-panel select,
+.control-panel input[type="number"],
+.control-panel input[type="checkbox"] {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    margin-bottom: 10px;
+    box-sizing: border-box; /* Include padding and border in the width calculation */
+}
+
+.control-panel select[multiple] {
+    height: 100px;
+}
+
+.control-panel select[multiple] option {
+    width: fit-content;
+}
+
+.center-content {
+    width: 100%;
+    text-align: center;
+    justify-content: center;
+    justify-self: center;
+    align-self: center;
+    gap: 10px;
+}
+
+.center-content span {
+    margin: 20px;
+}
+
+
+.matcher-grid {
+    width: 100%;
+    display: grid;
+    gap: 10px;
+}
+
+.matcher-section {
+    border-radius: 25px;
+    padding-inline: 10px;
+    background-color: aliceblue;
+    margin-left: 10px;
+    padding: 15px;
+}
+
+.matcher-section h3 {
+    font-size: 1.4rem;
+    margin: 2px;
+    width: fit-content;
+}
+
+.fairness-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); /* Match parent grid behaviour */
+    overflow: hidden;
+    gap: 10px;
+}
+
+.fairness-section {
+    border-radius: 8px;
+    padding: 10px;
+    margin: 15px;
+    background-color: white;
+
+}
+
+.fairness-section h4 {
+    font-size: 1.2rem;
+    margin: 2px;
+    width: fit-content;
+}
+
+.fairness-grid-item {
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.fairness-grid-item h5 {
+    margin-bottom: 5px;
+    width: fit-content;
+}
+
+.fairness-grid-item .react-chartjs-0 {
+    margin: 0 auto;
+}
+
+.analyze-button {
+    color: #fff;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: background-color 0.3s;
+}
+

@@ -1,0 +1,53 @@
+/* Table Styles */
+
+.sortable-table-div {
+    border-radius: 15px;
+    border-width: thin;
+    border: solid #bdd0e7; /* Add border style */
+    background-color: white;
+    display: flex;
+    flex-direction: column;
+    margin: 20px;
+}
+
+.sortable-table-div h3 {
+    margin: 0; /* Remove default margin */
+    padding: 10px; /* Adjust padding for spacing */
+    background-color: #bdd0e7;
+    border-radius: 10px 10px 0 0; /* Rounded corners for top */
+}
+
+.sortable-table {
+    border-collapse: collapse;
+    width: 100%;
+    /*border-radius: 15px;*/
+    /*border: 1px solid #c2c2c2; !* Add border style *!*/
+}
+
+.sortable-table tbody {
+    /*border-radius: 15px;*/
+}
+
+.sortable-table th,
+.sortable-table td {
+    /*border: 1px solid #dddddd;*/
+    text-align: left;
+    padding: 8px;
+}
+
+.sortable-table th {
+    background-color: #e4eef6;
+}
+
+.sortable-table th:hover {
+    cursor: pointer;
+    background-color: #dddddd;
+}
+
+.sortable-table th.sorted-asc::after {
+    content: " ▲";
+}
+
+.sortable-table th.sorted-desc::after {
+    content: " ▼";
+}

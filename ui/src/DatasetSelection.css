@@ -1,0 +1,60 @@
+/* DatasetSelection.css */
+.dataset-div {
+    margin: 20px;
+    padding: 20px;
+    padding-top: 0px ;
+}
+
+.dataset-options-div {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-evenly;
+}
+
+.template-dataset-div {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    width: 50%;
+}
+
+.without-training-div {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin: 20px;
+}
+
+
+.template-dataset-div label {
+    width: fit-content;
+}
+
+.upload-section {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.upload-div {
+    display: flex;
+    flex-direction: column;
+    width: fit-content;
+    margin: 20px;
+    gap: 10px;
+}
+
+.upload-div button {
+    width: min-content;
+}
+
+.file-input {
+    width: 100%;
+}
+
+
+.upload-status {
+    margin-top: 20px;
+    font-size: 16px;
+    color: #333;
+}

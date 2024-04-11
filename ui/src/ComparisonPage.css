@@ -1,0 +1,42 @@
+.comparison-div {
+    padding: 0;
+    /*width: 100%;*/
+    margin: 20px;
+    /*display: flex;*/
+}
+
+.results-div {
+    display: flex;
+    flex: 1;
+    flex-direction: row;
+    justify-content: space-around;
+    align-content: center;
+    text-align: center;
+    width: 100%;
+    gap: 20px;
+}
+
+.tables-div {
+    flex: 1; /* Both table and diagram divs will take equal space */
+    padding: 10px; /* Add some padding for spacing */
+}
+.diagram-div {
+    flex: 2; /* Both table and diagram divs will take equal space */
+    padding: 10px; /* Add some padding for spacing */
+    width: 700px;
+}
+
+.diagram-div p {
+    margin: 50px;
+}
+
+/*.sortable-table {*/
+/*    width: 100%; !* Ensure the table takes up the entire width of its container *!*/
+/*    height: 100%;*/
+/*}*/
+
+/*!* Adjustments for Scatter Chart *!*/
+/*canvas {*/
+/*    max-width: 100%; !* Ensure the chart canvas does not overflow its container *!*/
+/*    max-height: 100%;*/
+/*}*/
