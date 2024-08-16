@@ -338,11 +338,11 @@ class Workload:
         # values = [x - workload_fairness for x in values]
 
         if aggregate == "subtraction based":
-            values = [x - workload_fairness for x in values]
+            values = [workload_fairness - x for x in values]
         elif aggregate == "division based":
             values = [
-                (max(x, workload_fairness) / min(x, workload_fairness)) - 1 if min(x, workload_fairness) != 0 else 0
-                for x in values
+                # (max(x, workload_fairness) / min(x, workload_fairness)) - 1 if min(x, workload_fairness) != 0 else 0
+                 (workload_fairness / x) - 1 for x in values
             ]
         elif aggregate == "max":
             return max(values)
