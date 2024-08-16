@@ -10,7 +10,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from convertors import split, ConvertorManager, StandardConvertor
 from enums import DisparityCalculationType, FairnessMeasure, MatcherAlgorithm, PerformanceMetric
-from fairness.analyzer import FairnessAnalyzer
+from fairness.analyzer import FairnessAnalyzer, ExplanationProvider, PerformanceAnalyzer, EnsembleAnalyzer
 from matchers import MatcherManager
 from predictors import PredictorManager, Predictor
 from utils import load_dataset_as_df
@@ -58,9 +58,11 @@ def get_template_datasets():
     return {
         "datasets": [
             {"name": "Faculty Match",
+             "filename": "faculty_match",
              "description": "CSRankings is a global ranking system that evaluates computer science departments based on the scholarly research activities of their faculty members from universities across the world. For each faculty, in addition to their names, the dataset contains other information such as affiliation country. FacultyMatch is a semi-synthetic dataset based on CSRankings, designed specifically for evaluating fairness in entity matching tasks.",
              "sensitive_attribute": "Affiliation Country"},
             {"name": "No Fly Compas",
+             "filename": "compas",
              "description": "Compas is a public dataset of criminal records that has been widely used in Fair ML research. In addition to names and other information, the dataset contains demographic information for each individual. NoFlyCompas is a semi-synthetic dataset generated from Compas data, tailored to simulate an airline security scenario where a passenger list is compared against a terrorist watch list.",
              "sensitive_attribute": "Race"}
         ]
@@ -124,15 +126,16 @@ async def find_scores(dataset_id: str, matchers: List[str] = Query(None), epochs
     with ThreadPoolExecutor() as executor:
         futures = []
         for ma in matchers:
-            matcher_class = manager.get_matcher(ma.value)
+            matcher_class = manager.get_matcher(ma)
 
             if matcher_class in matcher_classes:
                 continue
 
             matcher_classes.add(matcher_class)
             matcher = matcher_class(dataset_id=dataset_id, epochs=epochs)
-            future = executor.submit(matcher.find_scores)  # Run matcher in a thread
-            futures.append(future)
+            if not matcher.scores_exist:
+                future = executor.submit(matcher.find_scores)  # Run matcher in a thread
+                futures.append(future)
 
         for future in futures:
             future.result()
@@ -169,6 +172,52 @@ async def calculate_fairness_metrics(dataset_id: str,
     return results
 
 
-@app.get("/v1/datasets/{dataset_id}/fairness/{group_name}/")
-def calculate_fairness_for_specific_group(dataset_id: str, group_name: str, sensitive_attribute: str):
-    pass
+@app.get("/v1/datasets/{dataset_id}/details/{group}/")
+def get_group_details(dataset_id: str, group: str,
+                      matcher: str,
+                      fairness_metric: str,
+                      sensitive_attribute: str,
+                      matching_threshold: float = 0.5):
+    test_df = pd.read_csv(StandardConvertor(dataset_id=dataset_id, splits=None).test_path)
+    matcher_algorithm = eval(f"MatcherAlgorithm.{matcher.upper().replace(' ', '_')}")
+    fairness_measure = eval(f"FairnessMeasure.{fairness_metric.upper().replace(' ', '_')}")
+
+    predictor_class: Type[Predictor] = PredictorManager.instance().get_predictor(predictor_name=matcher_algorithm.value)
+    prediction_df = predictor_class(dataset_id=dataset_id, matching_threshold=matching_threshold).predict()
+    performance_analyzer = ExplanationProvider(test_df=test_df, sensitive_attribute=sensitive_attribute)
+    results = performance_analyzer(prediction_df=prediction_df, group=group, fairness_measure=fairness_measure)
+    return results
+
+
+@app.get("/v1/datasets/{dataset_id}/ensemble/")
+def get_ensemble(dataset_id: str, sensitive_attribute: str,
+                 matchers: List[str] = Query(None),
+                 fairness_metrics: List[str] = Query(None),
+                 matching_threshold: float = 0.5):
+    test_df = pd.read_csv(StandardConvertor(dataset_id=dataset_id, splits=None).test_path)
+    matcher_algorithms = [eval(f"MatcherAlgorithm.{(m.upper().replace(' ', '_'))}") for m in matchers]
+    fairness_metrics = [eval(f"FairnessMeasure.{(m.upper().replace(' ', '_'))}") for m in fairness_metrics]
+
+    performance_analyzer = PerformanceAnalyzer(test_df=test_df, sensitive_attribute=sensitive_attribute)
+    ensemble_analyzer = EnsembleAnalyzer(test_df=test_df, sensitive_attribute=sensitive_attribute)
+    tables = {}
+    charts = []
+    for metric in fairness_metrics:
+        non_parity_metric = metric.value.replace("_parity", "")
+        prediction_mappings = {}
+        for matcher in matcher_algorithms:
+            predictor_class: Type[Predictor] = PredictorManager.instance().get_predictor(
+                predictor_name=matcher.value)
+            prediction_df = predictor_class(dataset_id=dataset_id, matching_threshold=matching_threshold).predict()
+            prediction_mappings[matcher.value] = prediction_df
+
+        performance_df = performance_analyzer(prediction_mappings=prediction_mappings, measure=non_parity_metric)
+        tables[non_parity_metric] = performance_df.to_dict(orient="split", index=False)
+        charts.append({
+            "name": non_parity_metric,
+            "xObj": "min",
+            "yObj": "max",
+            "data": ensemble_analyzer(df=performance_df)
+        })
+
+    return {"tables": tables, "charts": charts}

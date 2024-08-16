@@ -1,16 +1,29 @@
 import React, {useState} from 'react';
 import './SortableTable.css';
 import {Icon} from "@iconify/react";
+import {toTitleCase} from "./Utils";
 
-const SortableTable = ({data, columns, title, iconTitle = "tabler:ruler-measure" }) => {
+const SortableTable = ({tableData, title,  iconTitle = "tabler:ruler-measure"}) => {
     const [sortConfig, setSortConfig] = useState({key: null, direction: 'asc'});
+
+    if (!tableData || Object.keys(tableData).length === 0) {
+        return <div>No data available</div>;
+    }
+
+    const {columns, data} = tableData;
+
+    if (!columns || columns.length === 0 || !data ) {
+        return <div>No data available</div>;
+    }
 
     const sortedData = [...data].sort((a, b) => {
         if (sortConfig.key) {
-            if (a[sortConfig.key] < b[sortConfig.key]) {
+            const aValue = a[columns.indexOf(sortConfig.key)];
+            const bValue = b[columns.indexOf(sortConfig.key)];
+            if (aValue < bValue) {
                 return sortConfig.direction === 'asc' ? -1 : 1;
             }
-            if (a[sortConfig.key] > b[sortConfig.key]) {
+            if (aValue > bValue) {
                 return sortConfig.direction === 'asc' ? 1 : -1;
             }
         }
@@ -27,14 +40,14 @@ const SortableTable = ({data, columns, title, iconTitle = "tabler:ruler-measure"
 
     return (
         <div className="sortable-table-div">
-            <h3><Icon inline={true} icon={iconTitle}/> {title}</h3>
+            <h3><Icon inline={true} icon={iconTitle}/> {toTitleCase(title)}</h3>
             <table className="sortable-table">
                 <thead>
                 <tr>
                     {columns.map((column) => (
-                        <th key={column.key} onClick={() => requestSort(column.key)}>
-                            {column.label}
-                            {sortConfig.key === column.key && (
+                        <th key={column} onClick={() => requestSort(column)}>
+                            {toTitleCase(column)}
+                            {sortConfig.key === column && (
                                 <span>{sortConfig.direction === 'asc' ? ' ↓' : ' ↑'}</span>
                             )}
                         </th>
@@ -42,17 +55,16 @@ const SortableTable = ({data, columns, title, iconTitle = "tabler:ruler-measure"
                 </tr>
                 </thead>
                 <tbody>
-                {sortedData.map((item, index) => (
-                    <tr key={index}>
-                        {columns.map((column) => (
-                            <td key={column.key}>{item[column.key]}</td>
+                {sortedData.map((row, rowIndex) => (
+                    <tr key={rowIndex}>
+                        {row.map((value, colIndex) => (
+                            <td key={colIndex}>{value}</td>
                         ))}
                     </tr>
                 ))}
                 </tbody>
             </table>
         </div>
-
     );
 };
 

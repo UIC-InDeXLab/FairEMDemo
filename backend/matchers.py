@@ -83,6 +83,10 @@ class Matcher(ABC):
         # container.wait()
         self.output = output
 
+    @property
+    def scores_exist(self) -> bool:
+        return os.path.isfile(os.path.join(self.scores_dir, "preds.csv"))
+
     @staticmethod
     @abstractmethod
     def get_name() -> str:

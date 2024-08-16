@@ -128,9 +128,9 @@ function DatasetSelection({setDatasetId, setDisableNext, onNext}) {
                             <input
                                 type="radio"
                                 name="template-dataset" // Group radio buttons
-                                value={template.name}
+                                value={template.filename}
                                 onChange={handleTemplateChange}
-                                checked={selectedTemplate === template.name}
+                                checked={selectedTemplate === template.filename}
                             />
                             <b> {template.name}</b>
                             <small><p>{template.description}</p>

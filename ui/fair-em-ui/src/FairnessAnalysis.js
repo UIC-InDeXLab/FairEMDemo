@@ -6,13 +6,12 @@ import {Chart, registerables} from 'chart.js';
 import './FairnessAnalysis.css';
 import './Dialog.css';
 import {Button, Dialog, DialogActions, DialogContent, DialogTitle} from '@mui/material';
-import {explanationData} from "./explanationData";
 import SortableTable from "./SortableTable";
 import {BeatLoader} from 'react-spinners';
-import {confusionMatrix, groupCoverage} from "./tablesData";
 import {Icon} from '@iconify/react';
 import annotationPlugin from 'chartjs-plugin-annotation';
 import {stringToColor, toTitleCase} from "./Utils";
+import {tab} from "@testing-library/user-event/dist/tab";
 
 Chart.register(...registerables, annotationPlugin);
 
@@ -34,7 +33,7 @@ function FairnessAnalysis({
     const [selectedFairnessMetrics, setSelectedFairnessMetrics] = useState([]);
     const [matchingThreshold, setMatchingThreshold] = useState(0.5); // Default value
     const [fairnessThreshold, setFairnessThreshold] = useState(0.5); // Default value
-    const [groupAcceptanceCount, setGroupAcceptanceCount] = useState(10); // Default value
+    const [groupAcceptanceCount, setGroupAcceptanceCount] = useState(1); // Default value
     const [onlyShowUnfairGroups, setOnlyShowUnfairGroups] = useState(false);
     const [disparityCalculationTypes, setDisparityCalculationTypes] = useState([]);
     const [fairnessMeasures, setFairnessMeasures] = useState([]);
@@ -153,12 +152,39 @@ function FairnessAnalysis({
     }
 
 
-    const handleBarClick = (event, element) => {
+    const handleBarClick = (matcher) => async (event, elements) => {
         setDialogOpen(true);
         setDialogIsLoading(true);
-        setTimeout(() => {
+        setSelectedBarData(null);
+        try {
+            const params = new URLSearchParams();
+
+            const chart = event.chart;
+            const firstElement = elements[0];
+            const datasetIndex = firstElement.datasetIndex;
+            const dataIndex = firstElement.index;
+
+            const group = chart.data.labels[dataIndex];
+            const fairnessMetric = chart.data.datasets[datasetIndex].label;
+
+            params.append('sensitive_attribute', selectedSensitiveAttribute);
+            params.append('matching_threshold', matchingThreshold);
+            params.append('matcher', matcher);
+            params.append('fairness_metric', fairnessMetric);
+
+            const response = await axios.get(`${BASE_BACKEND_URL}/v1/datasets/${datasetId}/details/${group}/?${params}`, {
+                headers: {
+                    accept: 'application/json',
+                },
+            });
+
+            setSelectedBarData(response.data)
+
+        } catch (error) {
+            console.error('Error fetching group details:', error);
+        } finally {
             setDialogIsLoading(false);
-        }, 3143);
+        }
     };
 
     const getTooltipCallbacks = () => ({
@@ -179,25 +205,32 @@ function FairnessAnalysis({
         }
     });
 
+
     const getExplanationTable = () => {
+        const samplesKey = Object.keys(selectedBarData).find(key => key.endsWith('_samples'));
+
         return (
-            <SortableTable title="cn / False Negative Samples" data={explanationData.data} columns={explanationData.columns}
-                           iconTitle="material-symbols-light:tab-group-outline-rounded"></SortableTable>
+            <SortableTable
+                tableData={selectedBarData[samplesKey]}
+                title={samplesKey}
+                iconTitle="material-symbols-light:tab-group-outline-rounded"
+            />
         );
     };
 
     const getGroupCoverage = () => {
         return (
-            <SortableTable title="Coverage" columns={groupCoverage.columns}
-                           data={groupCoverage.data} iconTitle="codicon:debug-coverage"></SortableTable>
+            <SortableTable tableData={selectedBarData['coverage']} title="Coverage"
+                           iconTitle="codicon:debug-coverage"></SortableTable>
         )
     };
 
     const getConfusionMatrix = () => {
         return (
-            <SortableTable title="Confusion Matrix" columns={confusionMatrix.columns}
-                           data={confusionMatrix.data} iconTitle="mdi:matrix"></SortableTable>
+            <SortableTable tableData={selectedBarData['confusion_matrix']} title="Confusion Matrix"
+                           iconTitle="mdi:matrix"></SortableTable>
         )
+        return <div></div>
     };
 
     return (<div className="fairness-analysis-container">
@@ -287,7 +320,7 @@ function FairnessAnalysis({
                             <div className="fairness-grid">
                                 <Bar data={getBarChartData(fairnessData[matcher].single_fairness)}
                                      options={{
-                                         onClick: handleBarClick,
+                                         onClick: handleBarClick(matcher),
                                          plugins: {
                                              tooltip: getTooltipCallbacks(),
                                              legend: {
@@ -355,7 +388,7 @@ function FairnessAnalysis({
                             <div className="fairness-grid">
                                 <Bar data={getBarChartData(fairnessData[matcher].pairwise_fairness)}
                                      options={{
-                                         onClick: handleBarClick,
+                                         onClick: handleBarClick(matcher),
                                          plugins: {
                                              tooltip: getTooltipCallbacks(),
                                              legend: {
@@ -434,7 +467,8 @@ function FairnessAnalysis({
                 },
             }}
         >
-            <DialogTitle><Icon icon="material-symbols:indeterminate-question-box" inline={true}/> DeepMatcher</DialogTitle>
+            <DialogTitle><Icon icon="material-symbols:indeterminate-question-box"
+                               inline={true}/> DeepMatcher</DialogTitle>
             <DialogContent>
                 {dialogIsLoading && (
                     <div className="center-content">
@@ -442,7 +476,7 @@ function FairnessAnalysis({
                         Loading Selected Group Details ...
                     </div>
                 )}
-                {!dialogIsLoading && (
+                {!dialogIsLoading && selectedBarData != null && (
                     <div className="dialog-div">
                         <div className="dialog-example-div">
                             <h3><Icon icon="ph:eyedropper-sample-fill" inline={true}/> Samples From Original Data Set

@@ -8,16 +8,16 @@ const FairnessPerformanceChart = ({data, handlePointClick}) => {
             let xCondition = false;
 
             if (xObj === "min") {
-                xCondition = otherPoint.absolute_difference < point.absolute_difference;
+                xCondition = otherPoint.disparity < point.disparity;
             } else if (xObj === "max") {
-                xCondition = otherPoint.absolute_difference > point.absolute_difference;
+                xCondition = otherPoint.disparity > point.disparity;
             }
 
             let yCondition = false;
             if (yObj === "min") {
-                yCondition = otherPoint.error < point.error;
+                yCondition = otherPoint.performance < point.performance;
             } else if (yObj === "max") {
-                yCondition = otherPoint.error > point.error;
+                yCondition = otherPoint.performance > point.performance;
             }
 
             if (xCondition && yCondition) {
@@ -104,10 +104,10 @@ const FairnessPerformanceChart = ({data, handlePointClick}) => {
 
     const chartData = {
         datasets: data.map((dataset, index) => ({
-            label: toTitleCase(dataset.label),
+            label: toTitleCase(toTitleCase(dataset.name)),
             data: dataset.data.map((point) => ({
-                x: point.absolute_difference ,
-                y: point.error ,
+                x: point.disparity ,
+                y: point.performance ,
                 matchers: point.matchers,
             })),
             pointBackgroundColor: dataset.data.map(

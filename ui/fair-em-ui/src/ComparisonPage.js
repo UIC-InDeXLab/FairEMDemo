@@ -2,13 +2,15 @@ import SortableTable from "./SortableTable";
 import FairnessPerformanceChart from './FairnessPerformanceChart';
 import './ComparisonPage.css';
 import React, {useEffect, useState} from "react";
-import {paretoData} from "./paretoData";
 import {Icon} from "@iconify/react";
 import {BeatLoader} from "react-spinners";
 import {stringToColor, toTitleCase} from "./Utils";
 import {Button, Dialog, DialogActions, DialogContent, DialogTitle} from "@mui/material";
 import {Bar} from "react-chartjs-2";
-import {ensembles} from "./tablesData";
+import axios from "axios";
+import {BASE_BACKEND_URL} from "./api";
+
+// import {ensembles} from "./tablesData";
 
 function ComparisonPage({
                             datasetId,
@@ -23,6 +25,8 @@ function ComparisonPage({
                         }) {
     const [isLoading, setIsLoading] = useState(true);
     const [fetchedData, setFetchedData] = useState([]);
+    const [ensembleTables, setEnsembleTables] = useState(null);
+    const [ensembleChart, setEnsembleChart] = useState(null);
     const [dialogIsLoading, setDialogIsLoading] = useState(false);
     const [dialogOpen, setDialogOpen] = useState(false);
 
@@ -33,41 +37,26 @@ function ComparisonPage({
 
     const fetchData = async () => {
         try {
-            setTimeout(() => {
-                setFetchedData([
-                    {
-                        columns: [
-                            {key: 'matcher', label: 'Matcher'},
-                            {key: 'cn', label: 'cn'},
-                            {key: 'de', label: 'de'},
-                        ],
-                                data: [
-                                    {matcher: "DeepMatcher", cn: 0.48, de: 0.72},
-                                    {matcher: "HierMatcher", cn: 0.47, de: 0.78},
-                                    {matcher: "Ditto", cn: 0.59, de: 0.85},
-                                    {matcher: "MCAN", cn: 0.40, de: 0.70},
-                                    {matcher: "LinRegMatcher", cn: 0.33, de: 0.23}
-                                ]
-                    },
-                    {
-                        columns: [
-                            {key: 'matcher', label: 'Matcher'},
-                            {key: 'cn', label: 'cn'},
-                            {key: 'de', label: 'de'},
-                        ],
-                        data: [
-                            {matcher: "DeepMatcher", cn: 0.79, de: 0.87},
-                            {matcher: "HierMatcher", cn: 0.78, de: 0.89},
-                            {matcher: "Ditto", cn: 0.77, de: 0.94},
-                            {matcher: "MCAN", cn: 0.86, de: 0.94},
-                            {matcher: "LinRegMatcher", cn: 0.44, de: 0.96}
-                        ]
-                    }
-                ]);
-                setIsLoading(false);
-            }, 4379);
+            setIsLoading(true);
+            const params = new URLSearchParams();
+
+            params.append('sensitive_attribute', sensitiveAttribute);
+            params.append('matching_threshold', matchingThreshold);
+            matchers.forEach((matcher) => params.append('matchers', matcher));
+            fairnessMetrics.forEach((metric) => params.append('fairness_metrics', metric));
+
+
+            const response = await axios.get(`${BASE_BACKEND_URL}/v1/datasets/${datasetId}/ensemble/?${params}`, {
+                headers: {
+                    accept: 'application/json',
+                },
+            });
+            console.log(response.data)
+            setEnsembleTables(response.data.tables);
+            setEnsembleChart(response.data.charts);
         } catch (error) {
             console.error(error);
+        } finally {
             setIsLoading(false);
         }
     };
@@ -101,6 +90,7 @@ function ComparisonPage({
         };
     };
 
+
     return (
         <div className="comparison-div">
             {isLoading && (
@@ -109,25 +99,26 @@ function ComparisonPage({
                     Creating Ensemble of Matchers ...
                 </div>
             )}
-            {!isLoading && fetchedData && (<div className="results-div">
+            {!isLoading && ensembleTables && (<div className="results-div">
                 <div className="tables-div">
                     <h2><Icon inline={true} icon="majesticons:checkbox-list-detail-line"/> Metric Details</h2>
-                    {fairnessMetrics.map((metric, index) => {
-                        return (
-                            <SortableTable
-                                className="sortable-table"
-                                title={toTitleCase(metric.toString().replace("Parity", ""))}
-                                data={fetchedData[index].data}
-                                columns={fetchedData[index].columns}
-                            />
-                        );
-                    })}
+                    {Object.entries(ensembleTables).map(([title, data], index) => (
+                        <SortableTable title={title} tableData={data}/>
+                    ))}
                 </div>
                 <div className="diagram-div">
                     <h2><Icon icon="mdi:chart-box-outline" inline={true}/> Fairness Performance Tradeoff Chart</h2>
-                    <FairnessPerformanceChart data={paretoData} handlePointClick={handlePointClick}/>
-                    <p>The x-axis of this plot represents the unfairness of the matcher, while the y-axis captures the performance of the model. A smaller value on the x-axis indicates a more fair setting, as it signifies a model with unfairness closer to zero. For the y-axis, the desirability of a smaller or larger value depends on the performance measure being considered. For instance, in the case of the False Positive Rate Parity measure, a smaller value is desirable, while for the True Positive Rate Parity measure, a larger value may be preferable.
-                        Each point on the plot corresponds to an ensemble-based matching strategy and its associated unfairness and performance values. Users can navigate through the Pareto frontier of each measure and select a matching strategy that meets their preferred performance and fairness constraints.</p>
+                    <FairnessPerformanceChart data={ensembleChart} handlePointClick={handlePointClick}/>
+                    <p>The x-axis of this plot represents the unfairness of the matcher, while the y-axis captures the
+                        performance of the model. A smaller value on the x-axis indicates a more fair setting, as it
+                        signifies a model with unfairness closer to zero. For the y-axis, the desirability of a smaller
+                        or larger value depends on the performance measure being considered. For instance, in the case
+                        of the False Positive Rate Parity measure, a smaller value is desirable, while for the True
+                        Positive Rate Parity measure, a larger value may be preferable.
+                        Each point on the plot corresponds to an ensemble-based matching strategy and its associated
+                        unfairness and performance values. Users can navigate through the Pareto frontier of each
+                        measure and select a matching strategy that meets their preferred performance and fairness
+                        constraints.</p>
                 </div>
             </div>)}
             <Dialog
@@ -220,8 +211,8 @@ function ComparisonPage({
                             <div className="dialog-example-div">
                                 <h3><Icon icon="icon-park-outline:full-selection" inline={true}/> Selected Ensembles
                                 </h3>
-                                <SortableTable columns={ensembles.columns} data={ensembles.data} title="Ensembles"
-                                               iconTitle="material-symbols:all-match-outline-rounded"/>
+                                {/*<SortableTable columns={ensembles.columns} data={ensembles.data} title="Ensembles"*/}
+                                {/*               iconTitle="material-symbols:all-match-outline-rounded"/>*/}
                             </div>
                         </div>)}
                 </DialogContent>

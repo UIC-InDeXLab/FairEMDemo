@@ -146,7 +146,7 @@ class ConvertorManager:
 
     @staticmethod
     def get_convertor(matcher_name: str) -> Type[Convertor]:
-        return ConvertorManager._mappings[MatcherAlgorithm(matcher_name.strip().lower())]
+        return ConvertorManager._mappings[MatcherAlgorithm(matcher_name.strip())]
 
 
     @staticmethod
