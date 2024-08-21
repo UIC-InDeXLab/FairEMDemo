@@ -161,4 +161,3 @@ cython_debug/
 datasets/
 preprocess/
 .env
-scores/

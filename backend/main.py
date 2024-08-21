@@ -60,10 +60,10 @@ async def upload_dataset(file: UploadFile = File(...)):
 def get_template_datasets():
     return {
         "datasets": [
-            {"name": "Faculty Match",
-             "filename": "faculty_match",
-             "description": "CSRankings is a global ranking system that evaluates computer science departments based on the scholarly research activities of their faculty members from universities across the world. For each faculty, in addition to their names, the dataset contains other information such as affiliation country. FacultyMatch is a semi-synthetic dataset based on CSRankings, designed specifically for evaluating fairness in entity matching tasks.",
-             "sensitive_attribute": "Affiliation Country"},
+            {"name": "DBLP-ACM",
+             "filename": "dblp",
+             "description": "The DBLP-ACM dataset is a widely used benchmark for evaluating entity matching algorithms, particularly in the domain of bibliographic data. This dataset consists of publication records drawn from two major digital libraries: DBLP (a computer science bibliography website) and ACM (Association for Computing Machinery). The primary task is to determine whether pairs of records from these two sources refer to the same publication.",
+             "sensitive_attribute": "Venue"},
             {"name": "No Fly Compas",
              "filename": "compas",
              "description": "Compas is a public dataset of criminal records that has been widely used in Fair ML research. In addition to names and other information, the dataset contains demographic information for each individual. NoFlyCompas is a semi-synthetic dataset generated from Compas data, tailored to simulate an airline security scenario where a passenger list is compared against a terrorist watch list.",
@@ -162,40 +162,45 @@ async def calculate_fairness_metrics(dataset_id: str,
     disparity_calculation_type = eval(
         f"DisparityCalculationType.{(disparity_calculation_type.upper().replace(' ', '_'))}")
 
-    # results = {}
-    # for matcher in matcher_algorithms:
-    #     predictor_class: Type[Predictor] = PredictorManager.instance().get_predictor(predictor_name=matcher.value)
-    #     prediction_df = predictor_class(dataset_id=dataset_id, matching_threshold=matching_threshold).predict()
-    #     results[matcher.value] = fairness_analyzer(prediction_df=prediction_df,
-    #                                                disparity_calculation_type=disparity_calculation_type,
-    #                                                measures=fairness_metrics,
-    #                                                fairness_threshold=fairness_threshold,
-    #                                                group_acceptance_count=group_acceptance_count)
+    if dataset_id == "dblp":
+        results = {}
+        for matcher in matcher_algorithms:
+            predictor_class: Type[Predictor] = PredictorManager.instance().get_predictor(predictor_name=matcher.value)
+            prediction_df = predictor_class(dataset_id=dataset_id, matching_threshold=matching_threshold).predict()
+            results[matcher.value] = fairness_analyzer(prediction_df=prediction_df,
+                                                       disparity_calculation_type=disparity_calculation_type,
+                                                       measures=fairness_metrics,
+                                                       fairness_threshold=fairness_threshold,
+                                                       group_acceptance_count=group_acceptance_count)
 
-    with open(f"samples/{dataset_id}.json", 'r+') as f:
-        results = json.load(f)["sample_matcher"]
+        return results
+    else:
 
-    final_results = {}
-    for matcher in matcher_algorithms:
-        new_results = copy.deepcopy(results)
+        with open(f"samples/{dataset_id}.json", 'r+') as f:
+            results = json.load(f)["sample_matcher"]
 
-        for t, section in results.items():
-            for measure, metric_list in section.items():
-                if measure not in fairness_metrics:
-                    del new_results[t][measure]
-                    continue
-                for i, metric in enumerate(metric_list):
-                    noise = random.gauss(0, 0.04) if disparity_calculation_type == DisparityCalculationType.SUBTRACTION_BASED else (
-                        random.gauss(0.05, 0.07))
-                    metric['disparities'] += noise
-                    metric['disparities'] = abs(metric['disparities'])
-                    metric['is_fair'] = metric['disparities'] <= fairness_threshold
-                    new_results[t][measure][i]['disparities'] = metric['disparities']
-                    new_results[t][measure][i]['is_fair'] = metric['is_fair']
+        final_results = {}
+        for matcher in matcher_algorithms:
+            new_results = copy.deepcopy(results)
 
-        final_results[matcher.value] = new_results
+            for t, section in results.items():
+                for measure, metric_list in section.items():
+                    if measure not in fairness_metrics:
+                        del new_results[t][measure]
+                        continue
+                    for i, metric in enumerate(metric_list):
+                        noise = random.gauss(0,
+                                             0.04) if disparity_calculation_type == DisparityCalculationType.SUBTRACTION_BASED else (
+                            random.gauss(0.05, 0.07))
+                        metric['disparities'] += noise
+                        metric['disparities'] = abs(metric['disparities'])
+                        metric['is_fair'] = metric['disparities'] <= fairness_threshold
+                        new_results[t][measure][i]['disparities'] = metric['disparities']
+                        new_results[t][measure][i]['is_fair'] = metric['is_fair']
 
-    return final_results
+            final_results[matcher.value] = new_results
+
+        return final_results
 
 
 @app.get("/v1/datasets/{dataset_id}/details/{group}/")
@@ -211,7 +216,7 @@ def get_group_details(dataset_id: str, group: str,
     predictor_class: Type[Predictor] = PredictorManager.instance().get_predictor(predictor_name=matcher_algorithm.value)
     prediction_df = predictor_class(dataset_id=dataset_id, matching_threshold=matching_threshold).predict()
     performance_analyzer = ExplanationProvider(test_df=test_df, sensitive_attribute=sensitive_attribute)
-    results = performance_analyzer(prediction_df=prediction_df, group=group, fairness_measure=fairness_measure, seed=hash(matcher))
+    results = performance_analyzer(prediction_df=prediction_df, group=group, fairness_measure=fairness_measure, num_samples=6, seed=hash(matcher))
     return results
 
 

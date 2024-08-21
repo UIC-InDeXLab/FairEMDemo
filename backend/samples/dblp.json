@@ -1,0 +1,203 @@
+{
+   "sample_matcher":{
+      "single_fairness":{
+         "accuracy_parity":[
+            {
+               "measure":"accuracy_parity",
+               "sens_attr":"African-American",
+               "is_fair":true,
+               "counts":8100.0,
+               "disparities": 0.08
+            },
+            {
+               "measure":"accuracy_parity",
+               "sens_attr":"Caucasian",
+               "is_fair":true,
+               "counts":9045.0,
+               "disparities": 0.06
+            }
+         ],
+         "false_positive_rate_parity":[
+            {
+               "measure":"false_positive_rate_parity",
+               "sens_attr":"African-American",
+               "is_fair":true,
+               "counts":8100.0,
+               "disparities": 0.10
+            },
+            {
+               "measure":"false_positive_rate_parity",
+               "sens_attr":"Caucasian",
+               "is_fair":true,
+               "counts":9045.0,
+               "disparities": 0.05
+            }
+         ],
+         "negative_predictive_value_parity":[
+            {
+               "measure":"negative_predictive_value_parity",
+               "sens_attr":"African-American",
+               "is_fair":true,
+               "counts":8100.0,
+               "disparities": 0.11
+            },
+            {
+               "measure":"negative_predictive_value_parity",
+               "sens_attr":"Caucasian",
+               "is_fair":true,
+               "counts":9045.0,
+               "disparities": 0.09
+            }
+         ],
+         "positive_predictive_value_parity":[
+            {
+               "measure":"positive_predictive_value_parity",
+               "sens_attr":"African-American",
+               "is_fair":true,
+               "counts":8100.0,
+               "disparities": 0.12
+            },
+            {
+               "measure":"positive_predictive_value_parity",
+               "sens_attr":"Caucasian",
+               "is_fair":true,
+               "counts":9045.0,
+               "disparities": 0.08
+            }
+         ],
+         "true_positive_rate_parity":[
+            {
+               "measure":"true_positive_rate_parity",
+               "sens_attr":"African-American",
+               "is_fair":true,
+               "counts":8100.0,
+               "disparities": 0.28
+            },
+            {
+               "measure":"true_positive_rate_parity",
+               "sens_attr":"Caucasian",
+               "is_fair":true,
+               "counts":9045.0,
+               "disparities": 0.17
+            }
+         ]
+      },
+      "pairwise_fairness":{
+         "accuracy_parity":[
+            {
+               "measure":"accuracy_parity",
+               "sens_attr":"African-American|Caucasian",
+               "is_fair":true,
+               "counts":5825.0,
+               "disparities": 0.12
+            },
+            {
+               "measure":"accuracy_parity",
+               "sens_attr":"African-American|African-American",
+               "is_fair":true,
+               "counts":2275.0,
+               "disparities": 0.08
+            },
+            {
+               "measure":"accuracy_parity",
+               "sens_attr":"Caucasian|Caucasian",
+               "is_fair":true,
+               "counts":3220.0,
+               "disparities": 0.06
+            }
+         ],
+         "false_positive_rate_parity":[
+            {
+               "measure":"false_positive_rate_parity",
+               "sens_attr":"African-American|Caucasian",
+               "is_fair":true,
+               "counts":5825.0,
+               "disparities": 0.14
+            },
+            {
+               "measure":"false_positive_rate_parity",
+               "sens_attr":"African-American|African-American",
+               "is_fair":true,
+               "counts":2275.0,
+               "disparities": 0.12
+            },
+            {
+               "measure":"false_positive_rate_parity",
+               "sens_attr":"Caucasian|Caucasian",
+               "is_fair":true,
+               "counts":3220.0,
+               "disparities": 0.08
+            }
+         ],
+         "negative_predictive_value_parity":[
+            {
+               "measure":"negative_predictive_value_parity",
+               "sens_attr":"African-American|Caucasian",
+               "is_fair":true,
+               "counts":5825.0,
+               "disparities": 0.12
+            },
+            {
+               "measure":"negative_predictive_value_parity",
+               "sens_attr":"African-American|African-American",
+               "is_fair":true,
+               "counts":2275.0,
+               "disparities": 0.08
+            },
+            {
+               "measure":"negative_predictive_value_parity",
+               "sens_attr":"Caucasian|Caucasian",
+               "is_fair":true,
+               "counts":3220.0,
+               "disparities": 0.09
+            }
+         ],
+         "positive_predictive_value_parity":[
+            {
+               "measure":"positive_predictive_value_parity",
+               "sens_attr":"African-American|Caucasian",
+               "is_fair":true,
+               "counts":5825.0,
+               "disparities": 0.13
+            },
+            {
+               "measure":"positive_predictive_value_parity",
+               "sens_attr":"African-American|African-American",
+               "is_fair":true,
+               "counts":2275.0,
+               "disparities": 0.10
+            },
+            {
+               "measure":"positive_predictive_value_parity",
+               "sens_attr":"Caucasian|Caucasian",
+               "is_fair":true,
+               "counts":3220.0,
+               "disparities": 0.08
+            }
+         ],
+         "true_positive_rate_parity":[
+            {
+               "measure":"true_positive_rate_parity",
+               "sens_attr":"African-American|Caucasian",
+               "is_fair":true,
+               "counts":5825.0,
+               "disparities": 0.12
+            },
+            {
+               "measure":"true_positive_rate_parity",
+               "sens_attr":"African-American|African-American",
+               "is_fair":true,
+               "counts":2275.0,
+               "disparities": 0.09
+            },
+            {
+               "measure":"true_positive_rate_parity",
+               "sens_attr":"Caucasian|Caucasian",
+               "is_fair":true,
+               "counts":3220.0,
+               "disparities": 0.07
+            }
+         ]
+      }
+   }
+}
