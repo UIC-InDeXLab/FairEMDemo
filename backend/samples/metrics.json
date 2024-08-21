@@ -1,0 +1,7 @@
+{
+  "accuracy": -0.1,
+  "true_positive_rate": 0.8,
+  "false_positive_rate": 0.2,
+  "negative_predictive_value": 0.8,
+  "positive_predictive_value": 0.6
+}

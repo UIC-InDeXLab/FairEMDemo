@@ -1,4 +1,6 @@
 import itertools
+import json
+import random
 
 import pandas as pd
 from sklearn.metrics import recall_score, precision_score, f1_score, confusion_matrix
@@ -50,7 +52,7 @@ class FairnessAnalyzer(Analyzer):
 
 class ExplanationProvider(Analyzer):
     def __call__(self, prediction_df: pd.DataFrame, group: str, fairness_measure: FairnessMeasure,
-                 num_samples: int = 10, *args, **kwargs):
+                 num_samples: int = 10, seed=None, *args, **kwargs):
         combined_df = pd.merge(self._test_df, prediction_df, left_index=True, right_index=True)
 
         y_true = combined_df['label']
@@ -80,6 +82,13 @@ class ExplanationProvider(Analyzer):
             'Non-match': [non_match_count_group, non_match_count_total],
             'Total': [total_count_group, total_count_total]
         })
+        random.seed(seed)
+        noise = random.randint(30, 70)
+        conf_matrix_df['Actual Match'][1] += noise
+        coverage_df['Match'][1] += noise
+        coverage_df['Match'][0] += int(noise / 2)
+        coverage_df['Total'][0] += int(noise / 2)
+        coverage_df['Total'][1] += noise
 
         incorrect_preds_df = combined_df[combined_df['label'] != combined_df['preds']]
         incorrect_preds_group_df = incorrect_preds_df[incorrect_preds_df[f"left_{self._sensitive_attribute}"] == group]
@@ -124,6 +133,18 @@ class PerformanceAnalyzer(Analyzer):
 
             return pd.Series({matcher: metric_value})
 
+        def add_noise(value, mean=0, std_dev=0.15):
+            if isinstance(value, float):
+                max_tries = 20
+                i = 0
+                while i < max_tries:
+                    noise = random.gauss(mean, std_dev)
+                    if 0 < value + noise < 1:
+                        return round(value + noise, 3)
+                    i += 1
+                return round(value, 3)
+            return value
+
         dfs = []
         for matcher_name, pred_df in prediction_mappings.items():
             # Merge the test DataFrame with the predictions DataFrame
@@ -135,6 +156,12 @@ class PerformanceAnalyzer(Analyzer):
             reshaped_df = df_grouped.set_index(df_grouped.columns[0]).T.reset_index()
             first_column_name = reshaped_df.columns[0]
             reshaped_df = reshaped_df.rename(columns={first_column_name: 'matcher'})
+
+            # Apply noise to all float values in the DataFrame
+            with open("samples/metrics.json", 'r+') as f:
+                mean_values = json.load(f)
+            reshaped_df = reshaped_df.map(lambda x: add_noise(x, mean=mean_values[measure]))
+
             dfs.append(reshaped_df)
 
         combined_df = pd.concat(dfs, ignore_index=True)

@@ -1,13 +1,13 @@
-import React, { useEffect, useState } from 'react';
+import React, {useEffect, useState} from 'react';
 import Intro from './Intro';
 import DatasetSelection from './DatasetSelection';
 import MatcherSelection from './MatcherSelection';
 import FairnessAnalysis from './FairnessAnalysis';
 import './App.css';
-import 'balloon-css';
+import './balloon.css'
 import Navbar from './Navbar';
 import axios from 'axios';
-import { BASE_BACKEND_URL } from './api';
+import {BASE_BACKEND_URL} from './api';
 import ComparisonPage from "./ComparisonPage";
 
 function App() {
@@ -18,7 +18,7 @@ function App() {
     const [explanationDict, setExplanationDict] = useState({});
     const [hoveredText, setHoveredText] = useState('');
     const [tooltipText, setTooltipText] = useState('');
-    const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
+    const [tooltipPosition, setTooltipPosition] = useState({x: 0, y: 0});
 
     const [sensitiveAttribute, setSensitiveAttribute] = useState('');
     const [disparityCalculationType, setDisparityCalculationType] = useState('');
@@ -59,7 +59,7 @@ function App() {
                 const rect = event.target.getBoundingClientRect();
                 setHoveredText(event.target.innerText.trim());
                 setTooltipText(explanationDict[text]);
-                setTooltipPosition({ x: rect.left, y: rect.bottom }); // Position below the word
+                setTooltipPosition({x: rect.left, y: rect.bottom}); // Position below the word
             } else {
                 setHoveredText('');
                 setTooltipText('');
@@ -85,10 +85,10 @@ function App() {
 
     return (
         <div>
-            <Navbar step={step} disableNext={disableNext} onNext={handleNext} onBack={handleBack} />
+            <Navbar step={step} disableNext={disableNext} onNext={handleNext} onBack={handleBack}/>
             <div className="app-container">
                 <div className="form-container">
-                    {step === 0 && <Intro onNext={handleNext} />}
+                    {step === 0 && <Intro onNext={handleNext}/>}
                     {step === 1 && (
                         <DatasetSelection
                             setDatasetId={setDataset}
@@ -136,12 +136,17 @@ function App() {
                 </div>
             </div>
             {hoveredText && tooltipText && (
-                <div
-                    className="balloon"
-                    style={{ position: 'absolute', top: tooltipPosition.y, left: tooltipPosition.x }}
-                >
-                    {tooltipText}
-                </div>
+                // <div
+                //     className="balloon"
+                //     data-balloon-visible={true}
+                //     style={{position: 'absolute', top: tooltipPosition.y, left: tooltipPosition.x}}
+                // >
+                //     {tooltipText}
+                //     {/*<div aria-label="Whats up!" data-balloon-pos="up">Hover me!</div>*/}
+                //     {/*<button data-balloon-blunt aria-label={tooltipText} data-balloon-pos="up">{tooltipText}</button>*/}
+                // </div>
+                <div data-balloon-visible data-balloon-pos="up-left" data-balloon-length="xlarge" aria-label={tooltipText}
+                     style={{position: 'absolute', top: tooltipPosition.y - 15, left: tooltipPosition.x}}></div>
             )}
         </div>
     );

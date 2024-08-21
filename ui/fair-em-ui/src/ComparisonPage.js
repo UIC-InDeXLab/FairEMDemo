@@ -62,7 +62,7 @@ function ComparisonPage({
     };
 
     const handlePointClick = (event, element) => {
-        setDialogOpen(true);
+        setDialogOpen(false);
     }
 
     const getBarChartData = (data) => {
