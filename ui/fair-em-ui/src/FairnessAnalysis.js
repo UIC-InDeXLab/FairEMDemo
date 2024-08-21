@@ -90,7 +90,7 @@ function FairnessAnalysis({
         const labels = new Set();
 
         Object.entries(data).forEach(([fairnessMeasure, d]) => {
-            const fd = onlyShowUnfairGroups ? d.filter((item) => item.is_fair === false) : d;
+            const fd = onlyShowUnfairGroups ? d.filter((item) => item.disparities > fairnessThreshold) : d;
             fd.map((item) => item.sens_attr).forEach((attr) => labels.add(attr));
         });
 
@@ -98,7 +98,7 @@ function FairnessAnalysis({
             let filteredData = d;
             if (onlyShowUnfairGroups) {
                 filteredData = d.filter((item) => {
-                    return item.is_fair === false;
+                    return item.disparities > fairnessThreshold;
                 });
             }
             datasets.push({
@@ -108,7 +108,7 @@ function FairnessAnalysis({
                 borderColor: filteredData.map((item) => stringToColor(fairnessMeasure, 1)),
                 borderWidth: 1.5,
                 minBarLength: 3,
-                isFair: filteredData.map((item) => item.is_fair),
+                isFair: filteredData.map((item) => item.disparities < fairnessThreshold),
             });
         });
         if (!groupsUpdated) {
@@ -462,7 +462,7 @@ function FairnessAnalysis({
                 '& .MuiDialog-paper': {
                     backgroundColor: 'white', // Adjust background color here
                     borderRadius: '10px', // Set dialog radius
-                    minWidth: '1200px', // Set maximum width (optional)
+                    minWidth: '90%', // Set maximum width (optional)
                     // maxHeight: '600px', // Set maximum height (optional)
                 },
             }}

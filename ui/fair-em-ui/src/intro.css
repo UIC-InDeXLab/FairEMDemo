@@ -7,7 +7,7 @@
     height: 100vh;
     transition: opacity 1.5s ease; /* Opacity transition */
     opacity: 1; /* Initially set opacity to 1 */
-    background-color: #bddbfe;
+    /*background-color: #bddbfe;*/
 }
 
 .fade-out {
