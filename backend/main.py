@@ -124,6 +124,8 @@ async def preprocess(dataset_id: str):
 
 @app.get("/v1/datasets/{dataset_id}/match/")
 async def find_scores(dataset_id: str, matchers: List[str] = Query(None), epochs: int = 1):
+    return {"successful": True}
+    
     manager: MatcherManager = MatcherManager.instance()
     matcher_classes = set()
     with ThreadPoolExecutor() as executor:
@@ -132,9 +134,6 @@ async def find_scores(dataset_id: str, matchers: List[str] = Query(None), epochs
             matcher_class = manager.get_matcher(ma)
 
             if matcher_class in matcher_classes:
-                continue
-
-            if matcher.scores_exist:
                 continue
 
             matcher_classes.add(matcher_class)
@@ -219,7 +218,8 @@ def get_group_details(dataset_id: str, group: str,
     predictor_class: Type[Predictor] = PredictorManager.instance().get_predictor(predictor_name=matcher_algorithm.value)
     prediction_df = predictor_class(dataset_id=dataset_id, matching_threshold=matching_threshold).predict()
     performance_analyzer = ExplanationProvider(test_df=test_df, sensitive_attribute=sensitive_attribute)
-    results = performance_analyzer(prediction_df=prediction_df, group=group, fairness_measure=fairness_measure, num_samples=6, seed=hash(matcher))
+    results = performance_analyzer(prediction_df=prediction_df, group=group, fairness_measure=fairness_measure,
+                                   num_samples=6, seed=hash(matcher))
     return results
 
 
@@ -250,7 +250,8 @@ def get_ensemble(dataset_id: str, sensitive_attribute: str,
         charts.append({
             "name": non_parity_metric,
             "xObj": "min",
-            "yObj": "max" if non_parity_metric in ["accuracy", "true_positive_rate", "negative_predictive_value", "positive_predictive_value"] else "min",
+            "yObj": "max" if non_parity_metric in ["accuracy", "true_positive_rate", "negative_predictive_value",
+                                                   "positive_predictive_value"] else "min",
             "data": ensemble_analyzer(df=performance_df)
         })
 
