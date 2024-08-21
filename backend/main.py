@@ -134,6 +134,9 @@ async def find_scores(dataset_id: str, matchers: List[str] = Query(None), epochs
             if matcher_class in matcher_classes:
                 continue
 
+            if matcher.scores_exist:
+                continue
+
             matcher_classes.add(matcher_class)
             matcher = matcher_class(dataset_id=dataset_id, epochs=epochs)
             if not matcher.scores_exist:
