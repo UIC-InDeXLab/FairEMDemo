@@ -18,7 +18,11 @@ class Matcher(ABC):
         self.dataset_id = dataset_id
         self.epochs = epochs
         self.scores = []
-        self.client = docker.from_env()
+        try:
+            self.client = docker.from_env()
+        except Exception as e:
+            print(f"Exception occured: {e}")
+            pass
         self.output = None
         self.__init_dirs__()
 

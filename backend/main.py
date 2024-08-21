@@ -125,7 +125,7 @@ async def preprocess(dataset_id: str):
 @app.get("/v1/datasets/{dataset_id}/match/")
 async def find_scores(dataset_id: str, matchers: List[str] = Query(None), epochs: int = 1):
     return {"successful": True}
-    
+
     manager: MatcherManager = MatcherManager.instance()
     matcher_classes = set()
     with ThreadPoolExecutor() as executor:
